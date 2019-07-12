@@ -7,10 +7,11 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
+import android.widget.PopupMenu;
 import android.widget.TextView;
 import com.bumptech.glide.Glide;
 import com.rathana.rest_client_retrofit.R;
-import com.rathana.rest_client_retrofit.model.reponse.Article;
+import com.rathana.rest_client_retrofit.model.Article;
 
 import java.util.List;
 
@@ -22,6 +23,7 @@ public class AmsAdapter extends RecyclerView.Adapter<AmsAdapter.ViewHolder> {
     public AmsAdapter(List<Article> articles, Context mContext) {
         this.articles = articles;
         this.mContext = mContext;
+        this.callback= (AmsCallback) mContext;
     }
 
     public void addMoreItems(List<Article> articles) {
@@ -42,7 +44,7 @@ public class AmsAdapter extends RecyclerView.Adapter<AmsAdapter.ViewHolder> {
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolder viewHolder, int i) {
-        Article article=articles.get(i);
+        Article article = articles.get(i);
         viewHolder.title.setText(article.getTitle());
         viewHolder.date.setText(article.getCreateDate());
         //viewHolder.date.setText(DateFormatHelper.formatDate(article.getCreatedDate()));
@@ -57,6 +59,23 @@ public class AmsAdapter extends RecyclerView.Adapter<AmsAdapter.ViewHolder> {
             .override(450,350)
             .into(viewHolder.thumb);
 
+
+        viewHolder.btnMenu.setOnClickListener(v->{
+            PopupMenu menu=new PopupMenu(mContext,v);
+            menu.inflate(R.menu.popup_menu);
+            menu.setOnMenuItemClickListener(item->{
+                switch (item.getItemId()){
+                    case R.id.btnDelete:
+                        callback.onDelete(article,viewHolder.getAdapterPosition());
+                        return true;
+                    case R.id.btnEdit:
+                        callback.onEdit(article, viewHolder.getAdapterPosition());
+                        return true;
+                    default: return false;
+                }
+            });
+            menu.show();
+        });
     }
 
     @Override
@@ -81,4 +100,9 @@ public class AmsAdapter extends RecyclerView.Adapter<AmsAdapter.ViewHolder> {
     }
 
 
+    AmsCallback callback;
+    public interface AmsCallback{
+        void onDelete(Article article,int pos);
+        void onEdit(Article article,int pos);
+    }
 }

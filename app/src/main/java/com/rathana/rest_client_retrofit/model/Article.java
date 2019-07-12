@@ -1,4 +1,4 @@
-package com.rathana.rest_client_retrofit.model.reponse;
+package com.rathana.rest_client_retrofit.model;
 
 import android.os.Parcel;
 import android.os.Parcelable;
@@ -7,6 +7,7 @@ import com.google.gson.annotations.SerializedName;
 
 public  class Article{
 
+    @SerializedName("ID")
     public int id;
     @SerializedName("IMAGE")
     public String image;
@@ -15,13 +16,16 @@ public  class Article{
     @SerializedName("CATEGORY_ID")
     public int categoryId;
     @SerializedName("AUTHOR")
-    public int author;
+    public Author author;
     @SerializedName("DESCRIPTION")
     public String description;
     @SerializedName("TITLE")
     public String title;
     @SerializedName("CREATED_DATE")
     private String createDate;
+
+    @SerializedName("CATEGORY")
+    private Category category;
 
     public int getId() {
         return id;
@@ -33,9 +37,8 @@ public  class Article{
 
     public Article(){}
 
-    public Article(String title,String image, int author,String createDate ) {
+    public Article(String title,String image,String createDate ) {
         this.image = image;
-        this.author = author;
         this.title = title;
         this.createDate=createDate;
     }
@@ -84,11 +87,11 @@ public  class Article{
         this.categoryId = categoryId;
     }
 
-    public int getAuthor() {
+    public Author getAuthor() {
         return author;
     }
 
-    public void setAuthor(int author) {
+    public void setAuthor(Author author) {
         this.author = author;
     }
 
@@ -106,5 +109,13 @@ public  class Article{
 
     public void setTitle(String title) {
         this.title = title;
+    }
+
+    public Category getCategory() {
+        return category;
+    }
+
+    public void setCategory(Category category) {
+        this.category = category;
     }
 }

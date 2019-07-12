@@ -37,7 +37,8 @@ public class ServiceGenerator {
             }
         });
 
-        return builder.client(okHttp.build())
+        return builder
+                //.client(okHttp.build())
                 .build().create(serviceClass);
     }
 
