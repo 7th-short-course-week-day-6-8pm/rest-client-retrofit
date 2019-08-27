@@ -27,9 +27,10 @@ public class AmsAdapter extends RecyclerView.Adapter<AmsAdapter.ViewHolder> {
     }
 
     public void addMoreItems(List<Article> articles) {
-        int previousPos=this.articles.size();
+        int previousPos = this.articles.size();
         this.articles.addAll(articles);
-        notifyItemRangeInserted(previousPos-1,this.articles.size());
+        //notifyDataSetChanged();
+        notifyItemRangeInserted(previousPos,articles.size());
     }
 
 

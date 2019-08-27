@@ -10,9 +10,8 @@ public class Pagination{
     private int limit;
     @SerializedName("TOTAL_COUNT")
     private int totalCont;
-    @SerializedName("TOTAL_PAGE")
+    @SerializedName("TOTAL_PAGES")
     private int totalPage;
-
 
     public int getPage() {
         return page;

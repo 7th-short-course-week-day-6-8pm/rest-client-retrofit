@@ -1,6 +1,7 @@
 package com.rathana.rest_client_retrofit;
 
 import android.content.Intent;
+import android.os.Handler;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -12,6 +13,8 @@ import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import com.google.gson.JsonObject;
+import com.paginate.Paginate;
+import com.paginate.recycler.LoadingListItemSpanLookup;
 import com.rathana.rest_client_retrofit.adapter.AmsAdapter;
 import com.rathana.rest_client_retrofit.data.ServiceGenerator;
 import com.rathana.rest_client_retrofit.data.service.ArticleService;
@@ -26,6 +29,12 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+import io.reactivex.Flowable;
+import io.reactivex.Scheduler;
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.disposables.CompositeDisposable;
+import io.reactivex.schedulers.Schedulers;
+import io.reactivex.subscribers.DisposableSubscriber;
 import retrofit2.Call;
 import retrofit2.Callback;
 
@@ -38,6 +47,12 @@ public class MainActivity extends AppCompatActivity implements AmsAdapter.AmsCal
     ProgressBar progressBar;
     FloatingActionButton btnAdd;
     List<Article> articles=new ArrayList<>();
+    Paginate paginate;
+    int page=1;
+    int totalPage=10;
+    boolean isLoading=false;
+
+    CompositeDisposable disposable=new CompositeDisposable();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -74,7 +89,9 @@ public class MainActivity extends AppCompatActivity implements AmsAdapter.AmsCal
         });
 
         initView();
-        getArticle();
+        //getArticle();
+
+        //getArticleWithRx(1,20);
     }
 
     private void initView(){
@@ -82,9 +99,56 @@ public class MainActivity extends AppCompatActivity implements AmsAdapter.AmsCal
         rvArticle.setLayoutManager(new LinearLayoutManager(this));
         amsAdapter=new AmsAdapter(articles,this);
         rvArticle.setAdapter(amsAdapter);
+
+        //setup paginate
+        page=1;
+        isLoading=true;
+        paginate =Paginate.with(rvArticle,callback)
+        .setLoadingTriggerThreshold(2)
+        .addLoadingListItem(true)
+        .setLoadingListItemCreator(null)
+        .setLoadingListItemSpanSizeLookup(new LoadingListItemSpanLookup() {
+            @Override
+            public int getSpanSize() {
+                return 1;
+            }
+        }).build();
+
+        callback.onLoadMore();
     }
 
-    private void getArticle(){
+    Paginate.Callbacks callback=new Paginate.Callbacks() {
+        @Override
+        public void onLoadMore() {
+            if(isLoading){
+                Log.e(TAG, "page: " +page);
+//                new Handler().postDelayed(new Runnable() {
+//                    @Override
+//                    public void run() {
+//
+//                    }
+//                },500);
+
+                //getArticle((long)page,15l);
+                getArticleWithRx((long)page,15l);
+                page++;
+                isLoading=false;
+            }
+
+        }
+
+        @Override
+        public boolean isLoading() {
+            return false;
+        }
+
+        @Override
+        public boolean hasLoadedAllItems() {
+            return page==10;
+        }
+    };
+
+    private void getArticle(long page,long limit){
 //        for(int i=0;i<50;i++){
 //            articles.add(new Article(
 //                    "Glass Wall Art Acrylic Decor Stones and Sun",
@@ -94,20 +158,26 @@ public class MainActivity extends AppCompatActivity implements AmsAdapter.AmsCal
 //        }
 //        amsAdapter.addMoreItems(articles);
         progressBar.setVisibility(View.VISIBLE);
-        Call<ArticleResponse> call = articleService.getArticles("",1l,25l);
+        Call<ArticleResponse> call = articleService.getArticles("",page,limit);
         call.enqueue(new Callback<ArticleResponse>() {
                 @Override
                 public void onResponse(Call<ArticleResponse> call, retrofit2.Response<ArticleResponse> response) {
-                    Log.e(TAG, "Articles: "+response.body().getArticles());
+
+                    isLoading=true;
+                    totalPage=response.body().getPagination().getTotalPage();
                     Log.e(TAG, "Articles: "+response.code());
+                    Log.e(TAG, "Articles: "+response.body().getArticles());
                     amsAdapter.addMoreItems(response.body().getArticles());
                     progressBar.setVisibility(View.GONE);
+
+                    Log.e(TAG, "Total page: "+totalPage );
                 }
 
                 @Override
             public void onFailure(Call<ArticleResponse> call, Throwable t) {
                     Log.e(TAG, "Articles: "+t.toString());
                     progressBar.setVisibility(View.GONE);
+                    isLoading=false;
             }
         });
     }
@@ -134,11 +204,46 @@ public class MainActivity extends AppCompatActivity implements AmsAdapter.AmsCal
     }
 
     @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        paginate=null;
+        disposable.clear();
+    }
+
+    @Override
     public void onEdit(Article article, int pos) {
 
     }
 
     private static final String TAG = "MainActivity";
+
+    private  void getArticleWithRx(long page,long limit){
+       Flowable<ArticleResponse> flowable= articleService.getArticleWithRx("",page,limit);
+       disposable.add(flowable.subscribeOn(Schedulers.io())
+               .observeOn(AndroidSchedulers.mainThread())
+                .subscribeWith(new DisposableSubscriber<ArticleResponse>() {
+                    @Override
+                    public void onNext(ArticleResponse articleResponse) {
+                        Log.e(TAG, "onNext: "+ articleResponse.getArticles());
+                        isLoading=true;
+                        amsAdapter.addMoreItems(articleResponse.getArticles());
+
+                }
+
+                    @Override
+                    public void onError(Throwable t) {
+                        Log.e(TAG, "onError: "+t.toString() );
+                    }
+
+                    @Override
+                    public void onComplete() {
+                        Log.e(TAG, "onComplete: " );
+                    }
+                }));
+
+    }
+
+
 }
 
 
